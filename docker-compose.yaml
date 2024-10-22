@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  # Data Layer: PostgreSQL database
+  postgres:
+    image: postgres:17-alpine
+    container_name: retail-rag-postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    networks:
+      - retail-rag-network
+
+  # Data Ingestion & Embedding Layer: Data generation/ingestion service
+  data-generator:
+    build:
+      context: ./data  # This should point to the directory containing 'generation/'
+      dockerfile: docker/Dockerfile
+    container_name: retail-rag-data-ingestion
+    env_file:
+      - .env
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+    networks:
+      - retail-rag-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+
+networks:
+  retail-rag-network:
+    driver: bridge
