@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "retail-rag-embeddings"
+version = "0.1.0"
+description = "Retail RAG project - Generate embeddings for retail transactions data and store them in a vector store using FAISS."
+authors = ["Siddharth Nandagopal"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+# Dependencies for data handling and database connection
+psycopg2-binary = "^2.9"  # For connecting to PostgreSQL
+numpy = "^1.23"  # For handling numeric data and arrays
+scikit-learn = "^1.2"  # For standardization (StandardScaler)
+sentence-transformers = "^2.2.2"  # For generating text embeddings
+
+# FAISS library for vector indexing
+faiss-cpu = "^1.7.3"  # For managing vector stores using FAISS
+
+# Environment variables management
+python-dotenv = "^1.0"  # To load environment variables from .env files
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.2"  # For testing the scripts
+black = "^23.3"  # For code formatting
+flake8 = "^6.1"  # For linting
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

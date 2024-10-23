@@ -1,0 +1,33 @@
+# Use a lightweight Python image
+FROM python:3.13-slim
+
+# Install system dependencies for FAISS
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libopenblas-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip install poetry
+
+# Set working directory
+WORKDIR /app
+
+COPY /embeddings/ /app/
+# Copy pyproject.toml and poetry.lock for dependency installation
+# COPY embeddings/pyproject.toml embeddings/poetry.lock* /app/
+
+# Install dependencies using Poetry
+RUN poetry config virtualenvs.create false && poetry install --no-root
+
+# Copy the application code and scripts
+# COPY embeddings/ /app/
+# COPY ./vector_store.py /app/vector_store.py
+# COPY ./generate_embeddings.py /app/generate_embeddings.py
+
+# Set environment variables
+ENV VECTOR_STORE_DIR=/app/vector_store_data
+RUN mkdir -p $VECTOR_STORE_DIR
+
+# Command to run the embedding generation and vector store
+CMD ["python", "generate_embeddings.py"]

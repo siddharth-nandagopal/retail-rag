@@ -38,8 +38,26 @@ services:
     depends_on:
       - postgres
 
+  # Data Ingestion & Embedding Layer: Vector Store Service
+  vector-store:
+    build:
+      context: ./data
+      dockerfile: docker/Dockerfile.vector_store
+    container_name: retail-rag-vector-store
+    env_file:
+      - .env
+    volumes:
+      - ${VECTOR_STORE_DIR}:${VECTOR_STORE_DIR}
+    ports:
+      - "${VECTOR_STORE_PORT}:${VECTOR_STORE_PORT}"
+    networks:
+      - retail-rag-network
+    depends_on:
+      - postgres
+
 volumes:
   postgres_data:
+  vector_store_data:
 
 networks:
   retail-rag-network:
