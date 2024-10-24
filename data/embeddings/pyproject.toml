@@ -6,13 +6,14 @@ authors = ["Siddharth Nandagopal"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.12.0"
 
 # Dependencies for data handling and database connection
 psycopg2-binary = "^2.9"  # For connecting to PostgreSQL
 numpy = "^1.23"  # For handling numeric data and arrays
 scikit-learn = "^1.2"  # For standardization (StandardScaler)
 sentence-transformers = "^2.2.2"  # For generating text embeddings
+tokenizers = "<0.20.0"  # Downgrade tokenizers to avoid PEP 517 issues
 
 # FAISS library for vector indexing
 faiss-cpu = "^1.7.3"  # For managing vector stores using FAISS

@@ -1,5 +1,5 @@
 # Stage 1: Build the application with dependencies using Poetry
-FROM python:3.13-slim AS builder
+FROM python:3.12-slim AS builder
 
 # Install Poetry
 RUN pip install poetry
@@ -19,7 +19,7 @@ RUN poetry config virtualenvs.in-project true && poetry install --no-dev
 # COPY sql/init.sql /app/sql/
 
 # Stage 2: Create the final image to run the application
-FROM python:3.13-slim
+FROM python:3.12-slim
 
 # Set working directory
 WORKDIR /app
