@@ -47,7 +47,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ${VECTOR_STORE_DIR}:${VECTOR_STORE_DIR}
+      - ./data/${VECTOR_STORE_DIR}:/app/${VECTOR_STORE_DIR}
     ports:
       - "${VECTOR_STORE_PORT}:${VECTOR_STORE_PORT}"
     networks:
