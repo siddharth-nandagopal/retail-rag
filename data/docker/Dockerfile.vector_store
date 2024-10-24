@@ -38,6 +38,7 @@ COPY --from=vector-builder /app/.venv /app/.venv
 COPY --from=vector-builder /app/ /app/
 
 # Set environment variables
+ENV PATH="/app/.venv/bin:$PATH"
 ENV VECTOR_STORE_DIR=/app/vector_store_data
 RUN mkdir -p $VECTOR_STORE_DIR
 
