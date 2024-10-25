@@ -2,6 +2,7 @@ import os
 import json
 import psycopg2
 import numpy as np
+import gc
 from sentence_transformers import SentenceTransformer
 from sklearn.preprocessing import StandardScaler
 from vector_store import VectorStore
