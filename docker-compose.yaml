@@ -47,18 +47,19 @@ services:
     env_file:
       - .env
     volumes:
-      - ./data/${VECTOR_STORE_DIR}:/app/${VECTOR_STORE_DIR}
+      - vector_store_data:${VECTOR_STORE_DIR}
     ports:
       - "${VECTOR_STORE_PORT}:${VECTOR_STORE_PORT}"
     networks:
       - retail-rag-network
     depends_on:
       - postgres
-restart: always  # Ensures the container restarts if it stops
+    restart: always  # Ensures the container restarts if it stops
 
 volumes:
   postgres_data:
   vector_store_data:
+    driver: local
 
 networks:
   retail-rag-network:
