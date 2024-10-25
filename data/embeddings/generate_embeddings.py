@@ -29,107 +29,83 @@ conn = psycopg2.connect(
 )
 cursor = conn.cursor()
 
-# Extract data from the `retail_transactions` table
-def retrieve_data():
-    print("Fetching data from the retail_transactions table...")
+# Generator function to fetch data in chunks
+def fetch_data_in_batches(batch_size=1000):
     cursor.execute("""
-        SELECT product_category, product_description, quantity, unit_price, price, discount_applied, transaction_date
+        SELECT product_category, product_description, quantity, unit_price, price, discount_applied, transaction_date 
         FROM retail_transactions
+        LIMIT 2000
     """)
-    rows = cursor.fetchall()
-    return rows
+    while True:
+        rows = cursor.fetchmany(batch_size)
+        if not rows:
+            break
+        yield rows
 
-# Generate embeddings for product information
-def generate_product_embeddings(rows):
-    product_texts = [
-        f"{row[0]} {row[1]}" for row in rows  # Combine `product_category` and `product_description`
-    ]
-    print("Generating embeddings for product information...")
-    product_embeddings = model.encode(product_texts)
-    print("Product embeddings generated.")
-
-    # Save embeddings to JSON
-    with open(PRODUCT_EMBEDDINGS_FILE, 'w') as f:
-        json.dump({
-            "product_texts": product_texts,
-            "embeddings": product_embeddings.tolist()
-        }, f)
-    print(f"Product embeddings saved to {PRODUCT_EMBEDDINGS_FILE}")
-    return product_texts, product_embeddings
-
-# Generate normalized vectors for financial information
-def generate_financial_embeddings(rows):
-    financial_data = np.array([
-        [row[2], row[3], row[4], row[5]]  # `quantity`, `unit_price`, `price`, `discount_applied`
-        for row in rows
-    ], dtype='float32')
-
-    print("Normalizing financial data...")
+# Generate and store embeddings for each batch
+def process_and_store_embeddings(batch_size=1000):
     scaler = StandardScaler()
-    financial_embeddings = scaler.fit_transform(financial_data)
-    print("Financial embeddings generated and normalized.")
 
-    # Save embeddings to JSON
-    with open(FINANCIAL_EMBEDDINGS_FILE, 'w') as f:
-        json.dump({
-            "financial_data": financial_data.tolist(),
-            "embeddings": financial_embeddings.tolist()
-        }, f)
-    print(f"Financial embeddings saved to {FINANCIAL_EMBEDDINGS_FILE}")
-    return financial_embeddings
+    for batch_idx, rows in enumerate(fetch_data_in_batches(batch_size=batch_size)):
+        # Prepare product-related text data
+        product_texts = [f"{row[0]} {row[1]}" for row in rows]
 
-# Generate embeddings for time-based information
-def generate_time_embeddings(rows):
-    time_data = np.array([
-        [datetime.timestamp(row[6])]  # Convert `transaction_date` to a timestamp
-        for row in rows
-    ], dtype='float32')
+        # Generate product embeddings in batches
+        print(f"Generating product embeddings for batch {batch_idx}...")
+        product_embeddings = model.encode(product_texts, batch_size=32, convert_to_numpy=True)
+        print(f"Product embeddings for batch {batch_idx} generated.")
 
-    print("Normalizing time data...")
-    scaler = StandardScaler()
-    time_embeddings = scaler.fit_transform(time_data)
-    print("Time embeddings generated and normalized.")
+        # Process financial data and normalize
+        financial_data = np.array(
+            [[row[2], row[3], row[4], row[5]] for row in rows], dtype='float32'
+        )
+        financial_embeddings = scaler.fit_transform(financial_data)
+        print(f"Financial embeddings for batch {batch_idx} generated and normalized.")
 
-    # Save embeddings to JSON
-    with open(TIME_EMBEDDINGS_FILE, 'w') as f:
-        json.dump({
-            "time_data": time_data.tolist(),
-            "embeddings": time_embeddings.tolist()
-        }, f)
-    print(f"Time embeddings saved to {TIME_EMBEDDINGS_FILE}")
-    return time_embeddings
+        # Process time data and normalize
+        time_data = np.array(
+            [[datetime.timestamp(row[6])] for row in rows], dtype='float32'
+        )
+        time_embeddings = scaler.fit_transform(time_data)
+        print(f"Time embeddings for batch {batch_idx} generated and normalized.")
 
-# Store embeddings in the vector store
-def store_embeddings(texts, product_embeddings, financial_embeddings, time_embeddings):
+        # Save and store the embeddings for this batch
+        save_embeddings(batch_idx, product_texts, product_embeddings, financial_embeddings, time_embeddings)
+        print(f"Embeddings for batch {batch_idx} saved.")
+
+        # Perform garbage collection to free memory
+        del product_embeddings, financial_embeddings, time_embeddings, product_texts
+        gc.collect()
+
+# Save embeddings to JSON and add to vector store
+def save_embeddings(batch_idx, product_texts, product_embeddings, financial_embeddings, time_embeddings):
+    # Create vector store instance
     vector_store = VectorStore(VECTOR_STORE_DIR)
 
-    # Store product-related embeddings
-    vector_store.add_embeddings(texts, product_embeddings)
-    print("Product embeddings added to vector store.")
+    # Store product-related embeddings in the product index
+    vector_store.add_embeddings("product", product_texts, product_embeddings)
+    print(f"Product embeddings for batch {batch_idx} added to vector store.")
 
-    # Store financial embeddings (can be stored in a separate index or combined)
-    vector_store.add_embeddings(
-        ["financial_vector"] * len(financial_embeddings),
-        financial_embeddings
-    )
-    print("Financial embeddings added to vector store.")
+    # Store financial embeddings in the financial index
+    vector_store.add_embeddings("financial", ["financial_vector"] * len(financial_embeddings), financial_embeddings)
+    print(f"Financial embeddings for batch {batch_idx} added to vector store.")
 
-    # Store time-based embeddings
-    vector_store.add_embeddings(
-        ["time_vector"] * len(time_embeddings),
-        time_embeddings
-    )
-    print("Time embeddings added to vector store.")
+    # Store time-based embeddings in the time index
+    vector_store.add_embeddings("time", ["time_vector"] * len(time_embeddings), time_embeddings)
+    print(f"Time embeddings for batch {batch_idx} added to vector store.")
 
-# Main function
+    # Save embeddings to JSON files for reference
+    with open(PRODUCT_EMBEDDINGS_FILE.replace('.json', f'_{batch_idx}.json'), 'w') as f:
+        json.dump({"product_texts": product_texts, "embeddings": product_embeddings.tolist()}, f)
+    with open(FINANCIAL_EMBEDDINGS_FILE.replace('.json', f'_{batch_idx}.json'), 'w') as f:
+        json.dump({"financial_data": financial_embeddings.tolist()}, f)
+    with open(TIME_EMBEDDINGS_FILE.replace('.json', f'_{batch_idx}.json'), 'w') as f:
+        json.dump({"time_data": time_embeddings.tolist()}, f)
+
+
+# Main function to process all data in batches
 def main():
-    rows = retrieve_data()
-    product_texts, product_embeddings = generate_product_embeddings(rows)
-    financial_embeddings = generate_financial_embeddings(rows)
-    time_embeddings = generate_time_embeddings(rows)
-    store_embeddings(product_texts, product_embeddings, financial_embeddings, time_embeddings)
-
-    # Close the database connection
+    process_and_store_embeddings(batch_size=1000)
     cursor.close()
     conn.close()
     print("All embeddings generated and stored successfully.")
