@@ -34,7 +34,6 @@ def fetch_data_in_batches(batch_size=1000):
     cursor.execute("""
         SELECT product_category, product_description, quantity, unit_price, price, discount_applied, transaction_date 
         FROM retail_transactions
-        LIMIT 2000
     """)
     while True:
         rows = cursor.fetchmany(batch_size)
