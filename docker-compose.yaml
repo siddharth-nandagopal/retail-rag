@@ -54,6 +54,7 @@ services:
       - retail-rag-network
     depends_on:
       - postgres
+restart: always  # Ensures the container restarts if it stops
 
 volumes:
   postgres_data:

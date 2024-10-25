@@ -44,3 +44,6 @@ RUN mkdir -p $VECTOR_STORE_DIR
 
 # Command to run the embedding generation and vector store
 CMD ["python", "generate_embeddings.py"]
+
+# Add a new command to keep the container running after the script completes
+CMD ["tail", "-f", "/dev/null"]
