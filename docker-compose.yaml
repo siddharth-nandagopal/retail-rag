@@ -56,6 +56,25 @@ services:
       - postgres
     restart: always  # Ensures the container restarts if it stops
 
+  # API Layer: FastAPI application for handling user queries
+  api:
+    build:
+      context: ./api
+      dockerfile: docker/Dockerfile
+    container_name: retail-rag-api
+    env_file:
+      - .env
+    volumes:
+      - vector_store_data:${VECTOR_STORE_DIR}
+      - ./api:/app
+    ports:
+      - "${API_PORT}:${API_PORT}"
+    networks:
+      - retail-rag-network
+    depends_on:
+      - postgres
+      - vector-store
+
 volumes:
   postgres_data:
   vector_store_data:

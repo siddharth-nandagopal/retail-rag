@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "retail-rag-api"
+version = "0.1.0"
+description = "API layer for the Retail RAG application using FastAPI, OpenAI GPT Model, FAISS"
+authors = ["Siddharth Nandagopal"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.95.0"
+uvicorn = "^0.22.0"
+psycopg2-binary = "^2.9"
+faiss-cpu = "^1.7.3"
+numpy = "^1.23"
+python-dotenv = "^1.0"
+openai = "^1.51.2"
+sentence-transformers = "^2.2.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
